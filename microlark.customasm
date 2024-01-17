@@ -1,0 +1,40 @@
+; CPU Control Signals
+#ruledef
+{
+	; # CPU Sections
+
+	; ## Register File (Reg)
+	; ### Save to Register `RdZ` from Z Bus
+	RegInZ  => (1 << 0)`12
+	; ### Load from Register `RsX` onto X Bus
+	RegOutX => (1 << 1)`12
+	; ### Load from Register `RsY` onto Y Bus
+	RegOutY => (1 << 2)`12
+
+	; ## Instruction Register (Ir)
+	IrRsXOut => (1 << 0)`12
+	IrRsYOut => (1 << 0)`12
+	IrRsZOut => (1 << 0)`12
+	IrImmToMem => (1 << 0)`12
+	IrImmToY => (1 << 0)`12
+
+	; ## Program Counter (Pc)
+	; ### Load Program Counter onto X Bus
+	PcOutX => (1 << 0)`12
+	; ### Save to Program Counter from Z Bus
+	PcInZ  => (1 << 0)`12 ; AKA "jump"
+
+	; ## Memory (Mem)
+	; ### Read from Memory at `Imm + XBus`
+	MemRead => (1 << 0)`12
+	; ### Write to Memory at `Imm + XBus` the value `YBus`
+	MemWrite => (1 << 0)`12
+
+	; ## Arithmetic Logic Unit (Alu)
+
+	; ## X Source Bus (Xb)
+	; ## Y Source Bus (Yb)
+	; ## Z Destination Bus (Zb)
+}
+
+RegInZ

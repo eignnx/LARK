@@ -1,0 +1,179 @@
+#once
+
+#subruledef Reg
+{
+    $zero => 0x0`4
+    $rv   => 0x1`4
+    $ra   => 0x2`4
+    $a{n} => {
+        assert(n >= 0 && n < 3)
+        (0x3 + n)`4
+    }
+    $s{n} => {
+        assert(n >= 0 && n < 3)
+        (0x6 + n)`4
+    }
+    $t{n} => {
+        assert(n >= 0 && n < 3)
+        (0x9 + n)`4
+    }
+    $k{n} => {
+        assert(n >= 0 && n < 2)
+        (0xC + n)`4
+    }
+    $gp => 0xE`4
+    $sp => 0xF`4
+}
+
+#ruledef
+{
+    _exn => 0x00`6
+    _halt => 0x01`6
+    _nop => 0x02`6
+    _j => 0x08`6
+    _jr => 0x09`6
+    _jal => 0x0A`6
+    _jral => 0x0B`6
+    _bt => 0x0C`6
+    _kret => 0x0D`6
+    _kcall => 0x0E`6
+    _bf => 0x0F`6
+    _li => 0x10`6
+    _lw => 0x11`6
+    _lbs => 0x12`6
+    _lbu => 0x13`6
+    _mv => 0x14`6
+    _sw => 0x15`6
+    _sb => 0x16`6
+    _inre => 0x1C`6
+    _inrd => 0x1D`6
+    _add => 0x20`6
+    _sub => 0x21`6
+    _mul => 0x22`6
+    _div => 0x23`6
+    _or => 0x24`6
+    _xor => 0x25`6
+    _and => 0x26`6
+    _not => 0x27`6
+    _addi => 0x28`6
+    _subi => 0x29`6
+    _mvlo => 0x2A`6
+    _mvhi => 0x2B`6
+    _ori => 0x2C`6
+    _xori => 0x2D`6
+    _andi => 0x2E`6
+    _neg => 0x2F`6
+    _addu => 0x30`6
+    _subu => 0x31`6
+    _mulu => 0x32`6
+    _divu => 0x33`6
+    _shl => 0x34`6
+    _shr => 0x35`6
+    _shra => 0x36`6
+    _seb => 0x37`6
+    _tlt => 0x38`6
+    _tge => 0x39`6
+    _teq => 0x3A`6
+    _tne => 0x3B`6
+    _tltu => 0x3C`6
+    _tgeu => 0x3D`6
+    _tez => 0x3E`6
+    _tnz => 0x3F`6
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    ; 0x00 is an illegal instruction
+
+    ; Zero-argument instruction opcodes
+    halt => asm{_halt} @ 0b00
+    nop  => asm{_nop } @ 0b00
+    kret => asm{_kret} @ 0b00
+
+    ; One-argument instruction opcodes
+    j {abs_lbl: u16} => {
+        rel_lbl = abs_lbl - $
+        asm{_j} @ rel_lbl`16 @ 0b00
+    }
+    jal {ra: Reg}, {abs_lbl: u16} => {
+        rel_lbl = abs_lbl - $
+        asm{_jal  } @ ra @ rel_lbl`16 @ 0x00`6
+    }
+
+    exn   {code: u10} => asm{_exn  } @ code
+    kcall {code: u10} => asm{_kcall} @ code
+    jr    {dst: Reg}  => asm{_jr   } @ dst @ 0x00`6
+    mvlo  {dst: Reg}  => asm{_mvlo } @ dst @ 0x00`6
+    mvhi  {dst: Reg}  => asm{_mvhi } @ dst @ 0x00`6
+
+    ; Two-argument instruction opcodes
+    mv {dst: Reg}, {src: Reg} => asm{_mv} @ dst @ src @ 0b00
+
+    ; These can only jump +/- 8KiB (=2**14 (/2 for 2's comp))
+    bt {cond: Reg}, {abs_lbl: u16} => {
+        rel_lbl = abs_lbl - $
+        asm{_bt} @ cond @ rel_lbl`16 @ 0x00`6
+    }
+    bf {cond: Reg}, {abs_lbl: u16} => {
+        rel_lbl = abs_lbl - $
+        asm{_bf} @ cond @ rel_lbl`16 @ 0x00`6
+    }
+
+    not {dst: Reg}, {src: Reg}  => asm{_not} @ dst @ src @ 0b00
+    neg {dst: Reg}, {src: Reg}  => asm{_neg} @ dst @ src @ 0b00
+    li  {dst: Reg}, {simm: s16} => asm{_li } @ dst @ simm @ 0x00`6
+    seb {dst: Reg}, {src: Reg}  => asm{_seb} @ dst @ src @ 0b00
+
+    ; Three-argument instruction opcodes
+    or   {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_or  } @ dst @ rs1 @ rs2 @ 0b000000
+    xor  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_xor } @ dst @ rs1 @ rs2 @ 0b000000
+    and  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_and } @ dst @ rs1 @ rs2 @ 0b000000
+    add  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_add } @ dst @ rs1 @ rs2 @ 0b000000
+    addu {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_addu} @ dst @ rs1 @ rs2 @ 0b000000
+    sub  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_sub } @ dst @ rs1 @ rs2 @ 0b000000
+    subu {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_subu} @ dst @ rs1 @ rs2 @ 0b000000
+
+    ori  {dst: Reg}, {src: Reg}, {imm: s10} => asm{_ori } @ dst @ src @ imm
+    xori {dst: Reg}, {src: Reg}, {imm: s10} => asm{_xori} @ dst @ src @ imm
+    andi {dst: Reg}, {src: Reg}, {imm: s10} => asm{_andi} @ dst @ src @ imm
+    addi {dst: Reg}, {src: Reg}, {imm: s10} => asm{_addi} @ dst @ src @ imm
+    subi {dst: Reg}, {src: Reg}, {imm: s10} => asm{_subi} @ dst @ src @ imm
+                
+    mul  {rs1: Reg}, {rs2: Reg} => asm{_mul } @ rs1 @ rs2 @ 0x000`10
+    mulu {rs1: Reg}, {rs2: Reg} => asm{_mulu} @ rs1 @ rs2 @ 0x000`10 
+    div  {rs1: Reg}, {rs2: Reg} => asm{_div } @ rs1 @ rs2 @ 0x000`10
+    divu {rs1: Reg}, {rs2: Reg} => asm{_divu} @ rs1 @ rs2 @ 0x000`10 
+                
+    shl  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shl } @ dst @ rs1 @ rs2 @ 0x000`10
+    shr  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shr } @ dst @ rs1 @ rs2 @ 0x000`10
+    shra {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shra} @ dst @ rs1 @ rs2 @ 0x000`10
+                
+
+    tlt {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tlt} @ dst @ rs1 @ rs2 @ 0b000000
+    tge {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tge} @ dst @ rs1 @ rs2 @ 0b000000
+
+    teq {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_teq} @ dst @ rs1 @ rs2 @ 0b000000
+    tne {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tne} @ dst @ rs1 @ rs2 @ 0b000000
+
+    tltu {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tltu} @ dst @ rs1 @ rs2 @ 0b000000
+    tgeu {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tgeu} @ dst @ rs1 @ rs2 @ 0b000000
+
+    tez {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tez} @ dst @ rs1 @ rs2 @ 0b000000
+    tnz {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tnz} @ dst @ rs1 @ rs2 @ 0b000000
+
+                
+    sw   {offset: s10}({base: Reg}), {src: Reg} => asm{_sw} @ base @ src @ offset
+    lw   {dst: Reg}, {offset: s10}({base: Reg}) => asm{_lw} @ dst @ base @ offset
+
+    sb   {offset: s10}({base: Reg}), {src: Reg} => asm{_sb} @ base @ src @ offset
+    lbs  {dst: Reg}, {offset: s10}({base: Reg}) => asm{_lbs} @ dst @ base @ offset
+    lbu  {dst: Reg}, {offset: s10}({base: Reg}) => asm{_lbu} @ dst @ base @ offset
+}
+
+IO_ADDR = 0x0001
+EXN_BREAKPOINT = 1
+
+#bankdef rom
+{
+    #addr 2048
+    #outp 0
+}
