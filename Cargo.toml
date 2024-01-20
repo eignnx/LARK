@@ -1,2 +1,2 @@
 [workspace]
-members = ["lark-vm", "meadowlark"]
+members = ["lark-vm", "lark-ui", "meadowlark"]
