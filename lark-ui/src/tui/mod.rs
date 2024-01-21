@@ -1,4 +1,4 @@
-use std::{cell::RefCell, io::Write, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, io::Write, path::PathBuf, rc::Rc, sync::mpsc::Receiver};
 
 use anyhow::Result;
 use ratatui::prelude::*;
@@ -20,6 +20,9 @@ pub struct App {
     lark_src: Option<PathBuf>,
     romfile: Option<PathBuf>,
     vtty_buf: Rc<RefCell<MemBlock<{ cpu::VTTY_BYTES }>>>,
+
+    cpu_logger: Receiver<lark_vm::cpu::LogMsg>,
+
     /// The command currently being typed.
     cmd_input: tui_input::Input,
     cmd_output: Vec<CmdMsg>,
@@ -32,13 +35,15 @@ impl App {
     pub fn new(opts: Opts) -> Self {
         let vtty_buf = Rc::new(RefCell::new(MemBlock::new_zeroed()));
         let cmd_history = Self::load_histfile();
+        let (tx, rx) = std::sync::mpsc::channel();
 
         Self {
-            cpu: Cpu::new(Default::default(), vtty_buf.clone()),
+            cpu: Cpu::new(Default::default(), vtty_buf.clone(), tx),
             meadowlark_src: opts.meadowlark_src,
             lark_src: opts.lark_src,
             romfile: opts.romfile,
             vtty_buf,
+            cpu_logger: rx,
             cmd_input: tui_input::Input::default(),
             cmd_output: Vec::new(),
             cmd_history,

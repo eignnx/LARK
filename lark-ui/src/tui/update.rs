@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode};
-use lark_vm::cpu::{Cpu, MemBlock};
+use lark_vm::cpu::MemBlock;
 use tui_input::backend::crossterm::EventHandler;
 
 use super::App;
@@ -80,7 +80,7 @@ impl App {
             }
             // Reset the CPU and clear the virtual terminal.
             ["reset"] => {
-                todo!()
+                self.reset();
             }
             ["run"] => {
                 self.cpu.run();
@@ -138,11 +138,10 @@ impl App {
                 return;
             }
         };
-        self.romfile = Some(path);
 
-        // TODO: impl Cpu::reset and Cpu::load_rom
-        self.cpu = Cpu::new(rom, self.vtty_buf.clone());
-        self.clear_vtty();
+        self.reset();
+        self.romfile = Some(path);
+        self.cpu.load_rom(rom);
 
         self.cmd_info(format!(
             "Loaded ROM: {}",
@@ -153,5 +152,10 @@ impl App {
     fn clear_vtty(&mut self) {
         let mut vtty_buf = self.vtty_buf.borrow_mut();
         vtty_buf.mem.fill(0);
+    }
+
+    fn reset(&mut self) {
+        self.cpu.reset();
+        self.clear_vtty();
     }
 }

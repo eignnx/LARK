@@ -12,7 +12,7 @@ impl App {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(24), // Virtual Terminal
-                Constraint::Min(3),     // Command output
+                Constraint::Min(0),     // Command output
                 Constraint::Length(3),  // Input (borders + input line)
             ])
             .split(f.size());
