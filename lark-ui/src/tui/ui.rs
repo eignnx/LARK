@@ -1,4 +1,4 @@
-use lark_vm::cpu;
+use lark_vm::cpu::{self, ArgStyle};
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
@@ -43,8 +43,82 @@ impl App {
         )
     }
 
+    fn output_cpu_log<'a>(&self, items: &mut Vec<ListItem<'a>>, msg: &'a cpu::LogMsg) {
+        match msg {
+            cpu::LogMsg::Error(e) => {
+                items.push(ListItem::new(Line {
+                    spans: vec![Span::raw("CPU ERROR: ").red().bold(), Span::raw(e).red()],
+                    ..Default::default()
+                }));
+            }
+            cpu::LogMsg::Instr { size, name, args } => {
+                let mut item = vec![];
+                item.push(Span::raw(format!("|{}|\t", size)));
+                item.push(Span::raw(name).yellow().bold());
+                item.push("\t".into());
+                for (style, arg) in args {
+                    match style {
+                        Some(ArgStyle::Reg) => {
+                            item.push(" ".into());
+                            item.push(Span::raw(arg).magenta());
+                        }
+                        Some(ArgStyle::Imm) => {
+                            item.push(" ".into());
+                            item.push(Span::raw(arg).green());
+                        }
+                        None => {
+                            item.push(" ".into());
+                            item.push(Span::raw(arg));
+                        }
+                    }
+                }
+                items.push(ListItem::new(Line {
+                    spans: item,
+                    ..Default::default()
+                }));
+            }
+
+            cpu::LogMsg::DebugPuts { addr, value } => {
+                items.push(ListItem::new(Line {
+                    spans: vec![
+                        Span::raw("DEBUG PUTS ").bold(),
+                        Span::raw(format!("0x{:04x}", addr)).cyan(),
+                        Span::raw(": "),
+                        Span::raw(format!("{:?}", value)).green(),
+                    ],
+                    ..Default::default()
+                }));
+            }
+
+            cpu::LogMsg::MmioRead { addr, value } => {
+                items.push(ListItem::new(Line {
+                    spans: vec![
+                        Span::raw("MMIO["),
+                        Span::raw(format!("0x{:04x}", addr)).cyan(),
+                        Span::raw("] -> "),
+                        Span::raw(format!("{:?}", value)).green(),
+                    ],
+                    ..Default::default()
+                }));
+            }
+
+            cpu::LogMsg::MmioWrite { addr, value } => {
+                items.push(ListItem::new(Line {
+                    spans: vec![
+                        Span::raw("MMIO["),
+                        Span::raw(format!("0x{:04x}", addr)).cyan(),
+                        Span::raw("] <- "),
+                        Span::raw(format!("{:?}", value)).green(),
+                    ],
+                    ..Default::default()
+                }));
+            }
+        }
+    }
+
     fn render_cmd_output(&self, f: &mut Frame<'_>, cmd_output_row: Rect) {
         let mut list_items = Vec::<ListItem>::new();
+
         for msg in self.cmd_output.iter().rev() {
             match msg {
                 CmdMsg::Error(line) => {
@@ -96,6 +170,7 @@ impl App {
                         ..Default::default()
                     }));
                 }
+                CmdMsg::CpuMsg(cpu_msg) => self.output_cpu_log(&mut list_items, cpu_msg),
             }
         }
 
@@ -146,4 +221,5 @@ pub enum CmdMsg {
     Info(String),
     Error(String),
     Command(String),
+    CpuMsg(cpu::LogMsg),
 }

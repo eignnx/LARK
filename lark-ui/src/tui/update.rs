@@ -5,7 +5,7 @@ use crossterm::event::{self, Event, KeyCode};
 use lark_vm::cpu::MemBlock;
 use tui_input::backend::crossterm::EventHandler;
 
-use super::App;
+use super::{ui::CmdMsg, App};
 
 impl App {
     // App update function
@@ -56,8 +56,12 @@ impl App {
     }
 
     pub fn do_cmd(&mut self, cmd: &str) {
-        self.cmd_history.push(cmd.to_owned());
-        self.cmd_history_idx = 0;
+        // Don't save duplicate commands.
+        if self.cmd_history.last().is_some_and(|s| s != cmd) {
+            self.cmd_history.push(cmd.to_owned());
+            self.cmd_history_idx = 0;
+        }
+
         self.log_command(cmd);
 
         match cmd.split_ascii_whitespace().collect::<Vec<_>>().as_slice() {
@@ -80,10 +84,16 @@ impl App {
             }
             // Reset the CPU and clear the virtual terminal.
             ["reset"] => {
-                self.reset();
+                self.reset_cpu();
             }
             ["run"] => {
                 self.cpu.run();
+            }
+            ["step" | "s"] => {
+                self.cmd_log("Stepping...".to_string());
+                self.cpu.step().unwrap_or_else(|e| {
+                    self.cmd_err(format!("CPU Error: {:?}", e));
+                });
             }
             ["hexdump" | "x"] => {
                 self.cmd_info("Hexdump of ROM:".to_string());
@@ -115,6 +125,10 @@ impl App {
                 self.cmd_err(format!("Unknown command: `{}`", cmd));
             }
         }
+
+        for msg in self.cpu_logger.try_iter() {
+            self.cmd_output.push(CmdMsg::CpuMsg(msg));
+        }
     }
 
     fn load_rom(&mut self, path: &str) {
@@ -139,7 +153,7 @@ impl App {
             }
         };
 
-        self.reset();
+        self.reset_cpu();
         self.romfile = Some(path);
         self.cpu.load_rom(rom);
 
@@ -154,7 +168,7 @@ impl App {
         vtty_buf.mem.fill(0);
     }
 
-    fn reset(&mut self) {
+    fn reset_cpu(&mut self) {
         self.cpu.reset();
         self.clear_vtty();
     }
