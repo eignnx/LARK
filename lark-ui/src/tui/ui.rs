@@ -121,54 +121,62 @@ impl App {
 
         for msg in self.cmd_output.iter().rev() {
             match msg {
-                CmdMsg::Error(line) => {
-                    list_items.push(ListItem::new(Line {
-                        spans: vec![
-                            Span::styled(
-                                "ERROR: ",
-                                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                            ),
-                            Span::styled(line, Style::default().fg(Color::Red)),
-                        ],
-                        ..Default::default()
-                    }));
+                CmdMsg::Error(lines) => {
+                    for line in lines.lines() {
+                        list_items.push(ListItem::new(Line {
+                            spans: vec![
+                                Span::styled(
+                                    "ERROR: ",
+                                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                                ),
+                                Span::styled(line, Style::default().fg(Color::Red)),
+                            ],
+                            ..Default::default()
+                        }));
+                    }
                 }
-                CmdMsg::Info(line) => {
-                    list_items.push(ListItem::new(Line {
-                        spans: vec![
-                            Span::styled(
-                                "INFO: ",
-                                Style::default()
-                                    .fg(Color::Yellow)
-                                    .add_modifier(Modifier::BOLD),
-                            ),
-                            Span::styled(line, Style::default().fg(Color::Yellow)),
-                        ],
-                        ..Default::default()
-                    }));
+                CmdMsg::Info(lines) => {
+                    for line in lines.lines() {
+                        list_items.push(ListItem::new(Line {
+                            spans: vec![
+                                Span::styled(
+                                    "INFO: ",
+                                    Style::default()
+                                        .fg(Color::Yellow)
+                                        .add_modifier(Modifier::BOLD),
+                                ),
+                                Span::styled(line, Style::default().fg(Color::Yellow)),
+                            ],
+                            ..Default::default()
+                        }));
+                    }
                 }
-                CmdMsg::Log(line) => {
-                    list_items.push(ListItem::new(Line {
-                        spans: vec![
-                            Span::styled(
-                                "LOG: ",
-                                Style::default()
-                                    .fg(Color::Cyan)
-                                    .add_modifier(Modifier::BOLD),
-                            ),
-                            Span::raw(line),
-                        ],
-                        ..Default::default()
-                    }));
+                CmdMsg::Log(lines) => {
+                    for line in lines.lines() {
+                        list_items.push(ListItem::new(Line {
+                            spans: vec![
+                                Span::styled(
+                                    "LOG: ",
+                                    Style::default()
+                                        .fg(Color::Cyan)
+                                        .add_modifier(Modifier::BOLD),
+                                ),
+                                Span::raw(line),
+                            ],
+                            ..Default::default()
+                        }));
+                    }
                 }
-                CmdMsg::Command(line) => {
-                    list_items.push(ListItem::new(Line {
-                        spans: vec![
-                            Span::styled("> ", Style::default().italic()),
-                            Span::styled(line, Style::default().italic()),
-                        ],
-                        ..Default::default()
-                    }));
+                CmdMsg::Command(lines) => {
+                    for line in lines.lines() {
+                        list_items.push(ListItem::new(Line {
+                            spans: vec![
+                                Span::styled("> ", Style::default().italic()),
+                                Span::styled(line, Style::default().italic()),
+                            ],
+                            ..Default::default()
+                        }));
+                    }
                 }
                 CmdMsg::CpuMsg(cpu_msg) => self.output_cpu_log(&mut list_items, cpu_msg),
             }

@@ -1,4 +1,6 @@
-use std::{cell::RefCell, io::Write, path::PathBuf, rc::Rc, sync::mpsc::Receiver};
+use std::{
+    cell::RefCell, collections::BTreeSet, io::Write, path::PathBuf, rc::Rc, sync::mpsc::Receiver,
+};
 
 use anyhow::Result;
 use ratatui::prelude::*;
@@ -21,7 +23,9 @@ pub struct App {
     romfile: Option<PathBuf>,
     vtty_buf: Rc<RefCell<MemBlock<{ cpu::VTTY_BYTES }>>>,
 
-    cpu_logger: Receiver<lark_vm::cpu::LogMsg>,
+    cpu_signal_channel: Receiver<lark_vm::cpu::Signal>,
+    cpu_run_till_breakpoint: bool,
+    breakpoints: BTreeSet<u16>,
 
     /// The command currently being typed.
     cmd_input: tui_input::Input,
@@ -43,7 +47,11 @@ impl App {
             lark_src: opts.lark_src,
             romfile: opts.romfile,
             vtty_buf,
-            cpu_logger: rx,
+
+            cpu_signal_channel: rx,
+            cpu_run_till_breakpoint: false,
+            breakpoints: BTreeSet::new(),
+
             cmd_input: tui_input::Input::default(),
             cmd_output: Vec::new(),
             cmd_history,

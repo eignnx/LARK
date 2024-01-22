@@ -2,15 +2,24 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode};
-use lark_vm::cpu::MemBlock;
 use tui_input::backend::crossterm::EventHandler;
+
+use lark_vm::cpu::{MemBlock, Signal};
 
 use super::{ui::CmdMsg, App};
 
 impl App {
     // App update function
     pub fn update(&mut self) -> Result<()> {
-        if event::poll(std::time::Duration::from_millis(100))? {
+        if self.cpu_run_till_breakpoint {
+            self.cpu.step().unwrap_or_else(|e| {
+                self.cmd_err(format!("CPU Error: {:?}", e));
+            });
+        }
+
+        let ui_delay = if self.cpu_run_till_breakpoint { 1 } else { 100 };
+
+        if event::poll(std::time::Duration::from_millis(ui_delay))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == event::KeyEventKind::Press {
                     match key.code {
@@ -45,6 +54,27 @@ impl App {
                 }
             }
         }
+
+        // Alloc a vec so `self` isn't borrowed immutably. We want to mutate
+        // `self` in the match statement below.
+        let signals = self.cpu_signal_channel.try_iter().collect::<Vec<_>>();
+
+        for signal in signals {
+            match signal {
+                Signal::Log(msg) => {
+                    self.cmd_output.push(CmdMsg::CpuMsg(msg));
+                }
+                Signal::Halt => {
+                    self.cmd_log("CPU halted.".to_string());
+                    self.cpu_run_till_breakpoint = false;
+                }
+                Signal::Breakpoint => {
+                    self.cmd_log(format!("BREAKPOINT at pc=0x{:04x}", self.cpu.pc));
+                    self.cpu_run_till_breakpoint = false;
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -70,8 +100,8 @@ impl App {
                     .extension()
                     .map(|ext| ext.to_str().unwrap())
                 {
-                    // Some("meadowlark") => self.load_meadowlark(path),
-                    // Some("lark") => self.load_asm(path),
+                    Some("meadowlark" | "meadow") => self.load_meadowlark(path),
+                    Some("lark" | "asm") => self.load_asm(path),
                     Some("bin" | "rom") => self.load_rom(path),
                     _ => {
                         self.cmd_err(format!("Unknown file extension: {}", path));
@@ -87,7 +117,16 @@ impl App {
                 self.reset_cpu();
             }
             ["run"] => {
-                self.cpu.run();
+                self.cmd_log(format!(
+                    "Running `{}`...",
+                    self.romfile
+                        .as_ref()
+                        .or(self.lark_src.as_ref())
+                        .or(self.meadowlark_src.as_ref())
+                        .map(|p| p.display().to_string())
+                        .unwrap_or("<unknown source file>".to_string())
+                ));
+                self.cpu_run_till_breakpoint = true;
             }
             ["step" | "s"] => {
                 self.cmd_log("Stepping...".to_string());
@@ -125,10 +164,23 @@ impl App {
                 self.cmd_err(format!("Unknown command: `{}`", cmd));
             }
         }
+    }
 
-        for msg in self.cpu_logger.try_iter() {
-            self.cmd_output.push(CmdMsg::CpuMsg(msg));
+    fn load_meadowlark(&mut self, path: &str) {
+        let path = PathBuf::from(path);
+        match meadowlark::compile(&path, false) {
+            Ok(bin_path) => {
+                self.load_rom(bin_path.to_str().unwrap());
+                self.meadowlark_src = Some(path);
+            }
+            Err(e) => {
+                self.cmd_err(format!("Error compiling Meadowlark file: {}", e));
+            }
         }
+    }
+
+    fn load_asm(&mut self, path: &str) {
+        todo!()
     }
 
     fn load_rom(&mut self, path: &str) {
