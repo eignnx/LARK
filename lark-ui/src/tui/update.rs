@@ -17,10 +17,24 @@ impl App {
             });
         }
 
-        let ui_delay = if self.cpu_run_till_breakpoint { 1 } else { 100 };
+        let ui_delay = if self.cpu_run_till_breakpoint { 0 } else { 50 };
 
         if event::poll(std::time::Duration::from_millis(ui_delay))? {
-            if let Event::Key(key) = event::read()? {
+            let e = event::read()?;
+            if let Event::Mouse(m) = e {
+                match m.kind {
+                    event::MouseEventKind::ScrollDown => {
+                        self.cmd_output_scroll = self.cmd_output_scroll.saturating_sub(1);
+                    }
+                    event::MouseEventKind::ScrollUp => {
+                        self.cmd_output_scroll =
+                            (self.cmd_output_scroll + 1).min(self.cmd_output.len());
+                    }
+                    _ => {}
+                }
+            }
+
+            if let Event::Key(key) = e {
                 if key.kind == event::KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char('c' | 'd')
@@ -72,6 +86,10 @@ impl App {
                     self.cmd_log(format!("BREAKPOINT at pc=0x{:04x}", self.cpu.pc));
                     self.cpu_run_till_breakpoint = false;
                 }
+                Signal::IllegalInstr => {
+                    self.cmd_err(format!("Illegal instruction at pc=0x{:04x}", self.cpu.pc));
+                    self.cpu_run_till_breakpoint = false;
+                }
             }
         }
 
@@ -93,6 +111,8 @@ impl App {
         }
 
         self.log_command(cmd);
+        // Scroll to bottom of output.
+        self.cmd_output_scroll = 0;
 
         match cmd.split_ascii_whitespace().collect::<Vec<_>>().as_slice() {
             ["load" | "l", path] => {
@@ -147,14 +167,15 @@ impl App {
                 }
             }
             ["help" | "h"] => {
-                self.cmd_info("Available commands:".to_string());
-                self.cmd_info("  - load <path>".to_string());
+                self.cmd_info("Commands:".to_string());
+                self.cmd_info("  - load <path> (l)".to_string());
                 self.cmd_info("  - clearhist".to_string());
                 self.cmd_info("  - reset".to_string());
                 self.cmd_info("  - run".to_string());
-                self.cmd_info("  - hexdump".to_string());
-                self.cmd_info("  - help".to_string());
-                self.cmd_info("  - quit".to_string());
+                self.cmd_info("  - step (s)".to_string());
+                self.cmd_info("  - hexdump (x)".to_string());
+                self.cmd_info("  - help (h)".to_string());
+                self.cmd_info("  - quit (q)".to_string());
             }
             ["quit" | "q"] => {
                 self.cmd_history.pop(); // Don't save quit command

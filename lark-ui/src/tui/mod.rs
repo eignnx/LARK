@@ -30,8 +30,10 @@ pub struct App {
     /// The command currently being typed.
     cmd_input: tui_input::Input,
     cmd_output: Vec<CmdMsg>,
+    cmd_output_scroll: usize,
     cmd_history: Vec<String>,
     cmd_history_idx: usize,
+
     should_quit: bool,
 }
 
@@ -54,6 +56,7 @@ impl App {
 
             cmd_input: tui_input::Input::default(),
             cmd_output: Vec::new(),
+            cmd_output_scroll: 0,
             cmd_history,
             cmd_history_idx: 0,
             should_quit: false,

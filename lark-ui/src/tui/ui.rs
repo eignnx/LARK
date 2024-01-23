@@ -1,7 +1,7 @@
 use lark_vm::cpu::{self, ArgStyle};
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
 };
 
 use super::{utils, App};
@@ -182,10 +182,17 @@ impl App {
             }
         }
 
+        let nitems = list_items.len();
+        let window_height = cmd_output_row.height as usize;
+        let items_to_show = list_items
+            .into_iter()
+            .skip(self.cmd_output_scroll)
+            .take(window_height.min(nitems));
+
         f.render_widget(
-            List::new(list_items)
+            List::new(items_to_show)
                 .block(Block::default().borders(Borders::ALL))
-                .direction(ratatui::widgets::ListDirection::BottomToTop),
+                .direction(ListDirection::BottomToTop),
             cmd_output_row,
         );
     }

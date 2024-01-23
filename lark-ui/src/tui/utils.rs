@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::{
+    event::EnableMouseCapture,
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -23,7 +24,7 @@ pub fn centered_inline(desired_width: u16, parent: Rect) -> Rect {
 
 pub fn startup() -> Result<()> {
     enable_raw_mode()?;
-    execute!(std::io::stderr(), EnterAlternateScreen)?;
+    execute!(std::io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
     Ok(())
 }
 
