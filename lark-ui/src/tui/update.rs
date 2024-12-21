@@ -133,6 +133,21 @@ impl App {
                     }
                 }
             }
+            ["listing" | "program" | "prog"] => {
+                self.cmd_info("Program:".to_string());
+                let mut line = String::new();
+                let rom = self.cpu.mem.rom.mem.clone();
+                for (i, b) in rom.iter().enumerate() {
+                    line.push_str(&format!("{:02X} ", b));
+                    if i % 16 == 15 {
+                        self.cmd_info(line.clone());
+                        if line == "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 " {
+                            break;
+                        }
+                        line.clear();
+                    }
+                }
+            }
             ["clearhist"] => {
                 self.cmd_history.clear();
             }
@@ -177,6 +192,7 @@ impl App {
                 self.cmd_info("  - reset".to_string());
                 self.cmd_info("  - run".to_string());
                 self.cmd_info("  - step (s)".to_string());
+                self.cmd_info("  - program (prog, listing)".to_string());
                 self.cmd_info("  - hexdump (x)".to_string());
                 self.cmd_info("  - help (h)".to_string());
                 self.cmd_info("  - quit (q)".to_string());
