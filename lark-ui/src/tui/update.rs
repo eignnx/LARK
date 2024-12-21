@@ -156,12 +156,10 @@ impl App {
                 self.reset_cpu();
             }
             ["registers" | "regs" | "reg"] => {
-                let mut regs = self.cpu.regs.iter().collect::<Vec<_>>();
-                for (idx, (reg_name, r)) in regs.iter().enumerate() {
-                    let signed = r.as_i16();
-                    let unsigned = r.as_u16();
-                    let line =
-                        format!("${reg_name}: 0x{unsigned:02x}, 0d{unsigned:05}, {signed:+}");
+                use std::fmt::Write;
+                let mut lines = String::new();
+                write!(&mut lines, "{}", self.cpu.regs).unwrap();
+                for line in lines.lines() {
                     self.cmd_log(line);
                 }
             }
