@@ -42,8 +42,12 @@ impl App {
                         {
                             self.should_quit = true
                         }
+                        KeyCode::Esc if self.cpu_run_till_breakpoint => {
+                            self.cmd_log("CPU halted.".to_string());
+                            self.cpu_run_till_breakpoint = false;
+                        }
                         KeyCode::Esc => {
-                            self.should_quit = true;
+                            self.cmd_input.reset();
                         }
                         KeyCode::Up => {
                             self.cmd_history_idx =
