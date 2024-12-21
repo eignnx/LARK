@@ -155,6 +155,16 @@ impl App {
             ["reset"] => {
                 self.reset_cpu();
             }
+            ["registers" | "regs" | "reg"] => {
+                let mut regs = self.cpu.regs.iter().collect::<Vec<_>>();
+                for (idx, (reg_name, r)) in regs.iter().enumerate() {
+                    let signed = r.as_i16();
+                    let unsigned = r.as_u16();
+                    let line =
+                        format!("${reg_name}: 0x{unsigned:02x}, 0d{unsigned:05}, {signed:+}");
+                    self.cmd_log(line);
+                }
+            }
             ["run"] => {
                 self.cmd_log(format!(
                     "Running `{}`...",
@@ -185,16 +195,17 @@ impl App {
                     }
                 }
             }
-            ["help" | "h"] => {
+            ["help" | "h" | "?"] => {
                 self.cmd_info("Commands:".to_string());
-                self.cmd_info("  - load <path> (l)".to_string());
-                self.cmd_info("  - clearhist".to_string());
-                self.cmd_info("  - reset".to_string());
-                self.cmd_info("  - run".to_string());
+                self.cmd_info("  - load <PATH> (l)".to_string());
                 self.cmd_info("  - step (s)".to_string());
+                self.cmd_info("  - run".to_string());
+                self.cmd_info("  - reset".to_string());
+                self.cmd_info("  - registers (regs)".to_string());
                 self.cmd_info("  - program (prog, listing)".to_string());
                 self.cmd_info("  - hexdump (x)".to_string());
-                self.cmd_info("  - help (h)".to_string());
+                self.cmd_info("  - clearhist".to_string());
+                self.cmd_info("  - help (h, ?)".to_string());
                 self.cmd_info("  - quit (q)".to_string());
             }
             ["quit" | "q"] => {
