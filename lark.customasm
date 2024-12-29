@@ -120,7 +120,7 @@
 
     not {dst: Reg}, {src: Reg}  => asm{_not} @ dst @ src @ 0b00
     neg {dst: Reg}, {src: Reg}  => asm{_neg} @ dst @ src @ 0b00
-    li  {dst: Reg}, {simm: s16} => asm{_li } @ dst @ simm @ 0x00`6
+    li  {dst: Reg}, {simm: i16} => asm{_li } @ dst @ simm @ 0x00`6
     seb {dst: Reg}, {src: Reg}  => asm{_seb} @ dst @ src @ 0b00
 
     ; Three-argument instruction opcodes
@@ -132,11 +132,11 @@
     sub  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_sub } @ dst @ rs1 @ rs2 @ 0b000000
     subu {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_subu} @ dst @ rs1 @ rs2 @ 0b000000
 
-    ori  {dst: Reg}, {src: Reg}, {imm: s10} => asm{_ori } @ dst @ src @ imm
-    xori {dst: Reg}, {src: Reg}, {imm: s10} => asm{_xori} @ dst @ src @ imm
-    andi {dst: Reg}, {src: Reg}, {imm: s10} => asm{_andi} @ dst @ src @ imm
-    addi {dst: Reg}, {src: Reg}, {imm: s10} => asm{_addi} @ dst @ src @ imm
-    subi {dst: Reg}, {src: Reg}, {imm: s10} => asm{_subi} @ dst @ src @ imm
+    ori  {dst: Reg}, {src: Reg}, {imm: i10} => asm{_ori } @ dst @ src @ imm
+    xori {dst: Reg}, {src: Reg}, {imm: i10} => asm{_xori} @ dst @ src @ imm
+    andi {dst: Reg}, {src: Reg}, {imm: i10} => asm{_andi} @ dst @ src @ imm
+    addi {dst: Reg}, {src: Reg}, {imm: i10} => asm{_addi} @ dst @ src @ imm
+    subi {dst: Reg}, {src: Reg}, {imm: i10} => asm{_subi} @ dst @ src @ imm
                 
     mul  {rs1: Reg}, {rs2: Reg} => asm{_mul } @ rs1 @ rs2 @ 0x000`10
     mulu {rs1: Reg}, {rs2: Reg} => asm{_mulu} @ rs1 @ rs2 @ 0x000`10 
