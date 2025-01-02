@@ -8,22 +8,77 @@ use super::{utils, App};
 
 impl App {
     pub fn ui(&self, f: &mut Frame) {
-        let rows = Layout::default()
-            .direction(Direction::Vertical)
+        let cols = Layout::default()
+            .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Length(24), // Virtual Terminal
-                Constraint::Min(0),     // Command output
-                Constraint::Length(3),  // Input (borders + input line)
+                Constraint::Min(80), // Virtual Terminal
+                Constraint::Min(0),  // Side panel (registers, etc)
             ])
             .split(f.size());
 
-        let vtty_row = rows[0];
-        let cmd_output_row = rows[1];
-        let cmd_input_row = rows[2];
+        let vtty_cmd_input = cols[0];
+        let side_panel = cols[1];
 
-        self.render_vtty(f, vtty_row);
+        self.render_vtty_cmd_input(f, vtty_cmd_input);
+        self.render_side_panel(f, side_panel);
+    }
+
+    fn render_vtty_cmd_input(&self, f: &mut Frame, col: Rect) {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
+                Constraint::Min(3),                         // Cmd output height
+                Constraint::Length(3),                      // Cmd input height
+            ])
+            .split(col);
+
+        let vtty_inner_layout = layout[0];
+        let cmd_output_row = layout[1];
+        let cmd_input_row = layout[2];
+
+        self.render_vtty(f, vtty_inner_layout);
         self.render_cmd_output(f, cmd_output_row);
         self.render_cmd_input(cmd_input_row, f);
+    }
+
+    /// Side panel contains the registers display (and in the future other info that can be
+    /// tabbed to).
+    fn render_side_panel(&self, f: &mut Frame, side_panel: Rect) {
+        let regs_display = format!("{}", self.cpu.regs);
+        let regs_lines = regs_display
+            .lines()
+            .enumerate()
+            .map(|(i, line)| {
+                ListItem::new(Line {
+                    spans: vec![Span::raw(format!("${:<2} {}", i + 1, line))],
+                    ..Default::default()
+                })
+            })
+            .chain([
+                {
+                    let unsigned = *self.cpu.lo.as_u16();
+                    let signed = *self.cpu.lo.as_i16();
+                    ListItem::new(Line::raw(format!(
+                        "    $LO: 0x{:04x}, {:5}u, {:+5}",
+                        unsigned, unsigned, signed
+                    )))
+                },
+                {
+                    let unsigned = *self.cpu.hi.as_u16();
+                    let signed = *self.cpu.hi.as_i16();
+                    ListItem::new(Line::raw(format!(
+                        "    $HI: 0x{:04x}, {:5}u, {:+5}",
+                        unsigned, unsigned, signed
+                    )))
+                },
+                ListItem::new(Line::raw(format!("    $pc: 0x{:04x}", self.cpu.pc))),
+            ]);
+
+        f.render_widget(
+            List::new(regs_lines).block(Block::default().borders(Borders::ALL).title("Registers")),
+            side_panel,
+        );
     }
 
     fn render_cmd_input(&self, cmd_input_row: Rect, f: &mut Frame<'_>) {
@@ -202,6 +257,17 @@ impl App {
     }
 
     fn render_vtty(&self, f: &mut Frame, row: Rect) {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(0),
+                Constraint::Length(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
+                Constraint::Min(0),
+            ])
+            .split(row);
+
+        let vtty_inner_layout = layout[1];
+
         let mut lines = Vec::<Line>::new();
 
         // Interpret vtty buffer as a 2D array of rows of text with maximum 80
@@ -230,7 +296,7 @@ impl App {
                     .title(format!("Virtual Terminal ({w}x{h})"))
                     .borders(Borders::ALL),
             ),
-            rect,
+            vtty_inner_layout,
         );
     }
 }
