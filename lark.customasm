@@ -88,6 +88,8 @@
     halt => asm{_halt} @ 0b00
     nop  => asm{_nop } @ 0b00
     kret => asm{_kret} @ 0b00
+    inrd => asm{_inrd} @ 0b00
+    inre => asm{_inre} @ 0b00
 
     ; One-argument instruction opcodes
     j {abs_lbl: u16} => {
