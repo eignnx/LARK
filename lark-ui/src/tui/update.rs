@@ -189,7 +189,7 @@ impl App {
                 ));
                 self.cpu_run_till_breakpoint = true;
             }
-            ["step" | "s"] => {
+            [] | ["step" | "s"] => {
                 self.cmd_log("Stepping...".to_string());
                 self.cpu.step().unwrap_or_else(|e| {
                     self.cmd_err(format!("CPU Error: {:?}", e));
@@ -253,12 +253,14 @@ impl App {
             ["help" | "h" | "?"] => {
                 self.cmd_info("Commands:".to_string());
                 self.cmd_info("  - load <PATH> (l)".to_string());
-                self.cmd_info("  - step (s)".to_string());
+                self.cmd_info("  - step (s, ENTER)".to_string());
                 self.cmd_info("  - run".to_string());
                 self.cmd_info("  - reset".to_string());
                 self.cmd_info("  - registers (regs)".to_string());
                 self.cmd_info("  - program (prog, listing)".to_string());
                 self.cmd_info("  - hexdump (x)".to_string());
+                self.cmd_info("  - hexdump (x) <LOW> .. <HIGH>".to_string());
+                self.cmd_info("  - hexdump (x) <BASE> :+ <LEN>".to_string());
                 self.cmd_info("  - clearhist".to_string());
                 self.cmd_info("  - help (h, ?)".to_string());
                 self.cmd_info("  - quit (q)".to_string());
