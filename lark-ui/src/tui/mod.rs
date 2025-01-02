@@ -1,5 +1,10 @@
 use std::{
-    cell::RefCell, collections::BTreeSet, io::Write, path::PathBuf, rc::Rc, sync::mpsc::Receiver,
+    cell::RefCell,
+    collections::BTreeSet,
+    io::Write,
+    path::PathBuf,
+    rc::Rc,
+    sync::mpsc::{Receiver, Sender},
 };
 
 use anyhow::Result;
@@ -24,11 +29,13 @@ pub struct App {
     vtty_buf: Rc<RefCell<MemBlock<{ cpu::VTTY_BYTES }>>>,
 
     cpu_signal_channel: Receiver<lark_vm::cpu::Signal>,
+    cpu_interrupt_channel: Sender<lark_vm::cpu::interrupts::Interrupt>,
     cpu_run_till_breakpoint: bool,
     breakpoints: BTreeSet<u16>,
 
     /// The command currently being typed.
     cmd_input: tui_input::Input,
+    cmd_input_focus: bool,
     cmd_output: Vec<CmdMsg>,
     cmd_output_scroll: usize,
     cmd_history: Vec<String>,
@@ -42,19 +49,22 @@ impl App {
         let vtty_buf = Rc::new(RefCell::new(MemBlock::new_zeroed()));
         let cmd_history = Self::load_histfile();
         let (tx, rx) = std::sync::mpsc::channel();
+        let (interrupt_tx, interrupt_rx) = std::sync::mpsc::channel();
 
         Self {
-            cpu: Cpu::new(Default::default(), vtty_buf.clone(), tx),
+            cpu: Cpu::new(Default::default(), vtty_buf.clone(), tx, interrupt_rx),
             meadowlark_src: opts.meadowlark_src,
             lark_src: opts.lark_src,
             romfile: opts.romfile,
             vtty_buf,
 
             cpu_signal_channel: rx,
+            cpu_interrupt_channel: interrupt_tx,
             cpu_run_till_breakpoint: false,
             breakpoints: BTreeSet::new(),
 
             cmd_input: tui_input::Input::default(),
+            cmd_input_focus: true,
             cmd_output: Vec::new(),
             cmd_output_scroll: 0,
             cmd_history,

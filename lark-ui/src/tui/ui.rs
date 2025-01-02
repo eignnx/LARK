@@ -27,20 +27,24 @@ impl App {
     }
 
     fn render_cmd_input(&self, cmd_input_row: Rect, f: &mut Frame<'_>) {
-        let width = cmd_input_row.width.max(3) - 3;
-        // keep 2 for borders and 1 for cursor
-        let scroll = self.cmd_input.visual_scroll(width as usize);
-        let input = Paragraph::new(self.cmd_input.value())
-            .scroll((0, scroll as u16))
-            .block(Block::default().borders(Borders::ALL).title("Input"));
-        f.render_widget(input, cmd_input_row);
-        // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-        f.set_cursor(
-            // Put cursor past the end of the input text
-            cmd_input_row.x + ((self.cmd_input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
-            // Move one line down, from the border to the input line
-            cmd_input_row.y + 1,
-        )
+        if self.cmd_input_focus {
+            let width = cmd_input_row.width.max(3) - 3;
+            // keep 2 for borders and 1 for cursor
+            let scroll = self.cmd_input.visual_scroll(width as usize);
+            let input = Paragraph::new(self.cmd_input.value())
+                .scroll((0, scroll as u16))
+                .block(Block::default().borders(Borders::ALL).title("Input"));
+            f.render_widget(input, cmd_input_row);
+            // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
+            f.set_cursor(
+                // Put cursor past the end of the input text
+                cmd_input_row.x
+                    + ((self.cmd_input.visual_cursor()).max(scroll) - scroll) as u16
+                    + 1,
+                // Move one line down, from the border to the input line
+                cmd_input_row.y + 1,
+            )
+        }
     }
 
     fn output_cpu_log<'a>(&self, items: &mut Vec<ListItem<'a>>, msg: &'a cpu::LogMsg) {

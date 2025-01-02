@@ -4,7 +4,7 @@ use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode};
 use tui_input::backend::crossterm::EventHandler;
 
-use lark_vm::cpu::{MemBlock, Signal};
+use lark_vm::cpu::{MemBlock, MemRw, Signal};
 
 use super::{ui::CmdMsg, App};
 
@@ -42,6 +42,9 @@ impl App {
                         {
                             self.should_quit = true
                         }
+                        KeyCode::Home => {
+                            self.cmd_input_focus = !self.cmd_input_focus;
+                        }
                         KeyCode::Esc if self.cpu_run_till_breakpoint => {
                             self.cmd_log("CPU halted.".to_string());
                             self.cpu_run_till_breakpoint = false;
@@ -64,6 +67,17 @@ impl App {
                             let cmd = self.cmd_input.value().to_owned();
                             self.cmd_input.reset();
                             self.do_cmd(&cmd);
+                        }
+                        KeyCode::Char(ch) if self.cmd_input_focus => {
+                            self.cmd_input.handle_event(&Event::Key(key));
+                        }
+                        KeyCode::Char(ch) => {
+                            use lark_vm::cpu::{interrupts::Interrupt, MemRw};
+                            const KEY_CODE_ADDR: u16 = 0xF000;
+                            self.cpu.mem.write_u8(KEY_CODE_ADDR, ch as u8);
+                            self.cpu_interrupt_channel
+                                .send(Interrupt::KEY_EVENT)
+                                .expect("interrupt channel closed!");
                         }
                         _ => {
                             self.cmd_input.handle_event(&Event::Key(key));
@@ -186,11 +200,54 @@ impl App {
                 let mut line = String::new();
                 let rom = self.cpu.mem.rom.mem.clone();
                 for (i, b) in rom.iter().enumerate() {
-                    line.push_str(&format!("{:02X} ", b));
+                    line.push_str(&format!("{b:02X} "));
+                    if i % 16 == 7 {
+                        line.push_str("   ");
+                    }
                     if i % 16 == 15 {
-                        self.cmd_info(line.clone());
+                        self.cmd_info(format!("{i:04X} | {line}"));
                         line.clear();
                     }
+                }
+            }
+            ["hexdump" | "x", lo, "..", hi] => {
+                self.cmd_info("Hexdump of ROM:".to_string());
+                let mut line = String::new();
+                let lo: u16 = lo.parse().unwrap();
+                let hi: u16 = hi.parse().unwrap();
+                for i in lo..(hi - lo) {
+                    let b = self.cpu.mem.read_u8(i);
+                    line.push_str(&format!("{b:02X} "));
+                    if i % 16 == 7 {
+                        line.push_str("   ");
+                    }
+                    if i % 16 == 15 {
+                        self.cmd_info(format!("{i:04X} | {line}"));
+                        line.clear();
+                    }
+                }
+                if !line.is_empty() {
+                    self.cmd_info(line);
+                }
+            }
+            ["hexdump" | "x", base, ":+", len] => {
+                self.cmd_info("Hexdump of ROM:".to_string());
+                let mut line = String::new();
+                let base: u16 = base.parse().unwrap();
+                let len: u16 = len.parse().unwrap();
+                for i in base..(base + len) {
+                    let b = self.cpu.mem.read_u8(i);
+                    line.push_str(&format!("{b:02X} "));
+                    if i % 16 == 7 {
+                        line.push_str("   ");
+                    }
+                    if i % 16 == 15 {
+                        self.cmd_info(format!("{i:04X} | {line}"));
+                        line.clear();
+                    }
+                }
+                if !line.is_empty() {
+                    self.cmd_info(line);
                 }
             }
             ["help" | "h" | "?"] => {
