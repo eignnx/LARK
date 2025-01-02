@@ -190,6 +190,9 @@ impl App {
                 self.cpu_run_till_breakpoint = true;
             }
             [] | ["step" | "s"] => {
+                if cmd.is_empty() {
+                    self.cmd_history.pop(); // Don't save empty step command
+                }
                 self.cmd_log("Stepping...".to_string());
                 self.cpu.step().unwrap_or_else(|e| {
                     self.cmd_err(format!("CPU Error: {:?}", e));
