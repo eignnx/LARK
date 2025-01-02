@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode};
@@ -140,7 +140,7 @@ impl App {
                 {
                     Some("meadowlark" | "meadow") => self.load_meadowlark(path),
                     Some("lark" | "asm") => self.load_asm(path),
-                    Some("bin" | "rom") => self.load_rom(path),
+                    Some("bin" | "rom") => self.load_rom(Path::new(path)),
                     _ => {
                         self.cmd_err(format!("Unknown file extension: {}", path));
                         self.cmd_info("  - Supported extensions: .bin, .rom".to_string());
@@ -273,11 +273,11 @@ impl App {
         }
     }
 
-    fn load_meadowlark(&mut self, path: &str) {
+    pub(crate) fn load_meadowlark(&mut self, path: &str) {
         let path = PathBuf::from(path);
         match meadowlark::compile(&path, false) {
             Ok(bin_path) => {
-                self.load_rom(bin_path.to_str().unwrap());
+                self.load_rom(bin_path.as_path());
                 self.meadowlark_src = Some(path);
             }
             Err(e) => {
@@ -286,13 +286,12 @@ impl App {
         }
     }
 
-    fn load_asm(&mut self, _path: &str) {
+    pub(crate) fn load_asm(&mut self, _path: &str) {
         todo!()
     }
 
-    fn load_rom(&mut self, path: &str) {
-        let path = PathBuf::from(path);
-        let rom = match std::fs::read(&path) {
+    pub(crate) fn load_rom(&mut self, path: &Path) {
+        let rom = match std::fs::read(path) {
             Ok(rom) => rom,
             Err(e) => {
                 self.cmd_err(format!("Error reading ROM file: {}", e));
@@ -313,11 +312,11 @@ impl App {
         };
 
         self.reset_cpu();
-        self.romfile = Some(path);
+        self.romfile = Some(path.to_path_buf());
         self.cpu.load_rom(rom);
 
         self.cmd_info(format!(
-            "Loaded ROM: {}",
+            "Loaded ROM file `{}` ({romfile_size} bytes)",
             self.romfile.as_ref().unwrap().display()
         ));
     }

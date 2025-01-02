@@ -48,8 +48,10 @@ impl App {
         let (tx, rx) = std::sync::mpsc::channel();
         let (interrupt_tx, interrupt_rx) = std::sync::mpsc::channel();
 
-        Self {
-            cpu: Cpu::new(Default::default(), vtty_buf.clone(), tx, interrupt_rx),
+        let cpu = Cpu::new(Default::default(), vtty_buf.clone(), tx, interrupt_rx);
+
+        let mut app = Self {
+            cpu,
             meadowlark_src: opts.meadowlark_src,
             lark_src: opts.lark_src,
             romfile: opts.romfile,
@@ -66,7 +68,13 @@ impl App {
             cmd_history,
             cmd_history_idx: 0,
             should_quit: false,
+        };
+
+        if let Some(romfile) = app.romfile.as_ref() {
+            app.load_rom(&romfile.to_owned());
         }
+
+        app
     }
 
     pub fn run(&mut self) -> Result<()> {
