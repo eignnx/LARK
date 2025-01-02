@@ -1,6 +1,5 @@
 use std::{
     cell::RefCell,
-    collections::BTreeSet,
     io::Write,
     path::PathBuf,
     rc::Rc,
@@ -31,8 +30,6 @@ pub struct App {
     cpu_signal_channel: Receiver<lark_vm::cpu::Signal>,
     cpu_interrupt_channel: Sender<lark_vm::cpu::interrupts::Interrupt>,
     cpu_run_till_breakpoint: bool,
-    breakpoints: BTreeSet<u16>,
-
     /// The command currently being typed.
     cmd_input: tui_input::Input,
     cmd_input_focus: bool,
@@ -61,7 +58,6 @@ impl App {
             cpu_signal_channel: rx,
             cpu_interrupt_channel: interrupt_tx,
             cpu_run_till_breakpoint: false,
-            breakpoints: BTreeSet::new(),
 
             cmd_input: tui_input::Input::default(),
             cmd_input_focus: true,
@@ -159,6 +155,7 @@ impl Drop for App {
         // Open file for writing, create if it doesn't exist
         let mut f = std::fs::File::options()
             .create(true)
+            .truncate(true)
             .write(true)
             .open(path)
             .unwrap();

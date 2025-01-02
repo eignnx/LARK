@@ -25,8 +25,9 @@ pub struct Opts {
 }
 
 impl Opts {
+    #[expect(unused)]
     pub fn rom_src_path(&self) -> PathBuf {
-        self.lark_src.as_ref().map(Clone::clone).unwrap_or_else(|| {
+        self.lark_src.clone().unwrap_or_else(|| {
             self.romfile
                 .clone()
                 .expect("No lark source file provided")

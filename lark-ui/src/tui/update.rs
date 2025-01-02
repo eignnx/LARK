@@ -68,7 +68,7 @@ impl App {
                             self.cmd_input.reset();
                             self.do_cmd(&cmd);
                         }
-                        KeyCode::Char(ch) if self.cmd_input_focus => {
+                        KeyCode::Char(_ch) if self.cmd_input_focus => {
                             self.cmd_input.handle_event(&Event::Key(key));
                         }
                         KeyCode::Char(ch) => {
@@ -286,7 +286,7 @@ impl App {
         }
     }
 
-    fn load_asm(&mut self, path: &str) {
+    fn load_asm(&mut self, _path: &str) {
         todo!()
     }
 
