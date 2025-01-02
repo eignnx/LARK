@@ -4,7 +4,7 @@ set -e
 SRC=$(basename -s .meadow "$1")
 
 # Compile
-cargo run --bin meadowlark -- "../$1" > "../$SRC.lark"
+cargo run --bin meadowlark -- run "../$1" > "../$SRC.lark"
 
 cd ..
 
