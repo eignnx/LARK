@@ -27,9 +27,9 @@ impl App {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
-                Constraint::Min(3),                         // Cmd output height
-                Constraint::Length(3),                      // Cmd input height
+                Constraint::Length(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
+                Constraint::Min(3),                            // Cmd output height
+                Constraint::Length(3),                         // Cmd input height
             ])
             .split(col);
 
@@ -257,17 +257,6 @@ impl App {
     }
 
     fn render_vtty(&self, f: &mut Frame, row: Rect) {
-        let layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Min(0),
-                Constraint::Length(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
-                Constraint::Min(0),
-            ])
-            .split(row);
-
-        let vtty_inner_layout = layout[1];
-
         let mut lines = Vec::<Line>::new();
 
         // Interpret vtty buffer as a 2D array of rows of text with maximum 80
@@ -296,7 +285,7 @@ impl App {
                     .title(format!("Virtual Terminal ({w}x{h})"))
                     .borders(Borders::ALL),
             ),
-            vtty_inner_layout,
+            row,
         );
     }
 }
