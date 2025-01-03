@@ -282,7 +282,7 @@ impl App {
         f.render_widget(
             Paragraph::new(lines).wrap(Wrap { trim: false }).block(
                 Block::default()
-                    .title(format!("Virtual Terminal ({w}x{h})"))
+                    .title(format!("Virtual Terminal ({w}x{h})", h = h - 2))
                     .borders(Borders::ALL),
             ),
             row,
