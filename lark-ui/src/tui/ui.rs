@@ -57,16 +57,16 @@ impl App {
             })
             .chain([
                 {
-                    let unsigned = *self.cpu.lo.as_u16();
-                    let signed = *self.cpu.lo.as_i16();
+                    let unsigned = self.cpu.lo.as_u16();
+                    let signed = self.cpu.lo.as_i16();
                     ListItem::new(Line::raw(format!(
                         "    $LO: 0x{:04x}, {:5}u, {:+5}",
                         unsigned, unsigned, signed
                     )))
                 },
                 {
-                    let unsigned = *self.cpu.hi.as_u16();
-                    let signed = *self.cpu.hi.as_i16();
+                    let unsigned = self.cpu.hi.as_u16();
+                    let signed = self.cpu.hi.as_i16();
                     ListItem::new(Line::raw(format!(
                         "    $HI: 0x{:04x}, {:5}u, {:+5}",
                         unsigned, unsigned, signed
