@@ -145,10 +145,10 @@
     div  {rs1: Reg}, {rs2: Reg} => asm{_div } @ rs1 @ rs2 @ 0x000`10
     divu {rs1: Reg}, {rs2: Reg} => asm{_divu} @ rs1 @ rs2 @ 0x000`10 
                 
-    shl  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shl } @ dst @ rs1 @ rs2 @ 0x000`10
-    shr  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shr } @ dst @ rs1 @ rs2 @ 0x000`10
-    shra {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shra} @ dst @ rs1 @ rs2 @ 0x000`10
-                
+    shl  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shl } @ dst @ rs1 @ rs2 @ 0x00`6
+    shr  {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shr } @ dst @ rs1 @ rs2 @ 0x00`6
+    shra {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_shra} @ dst @ rs1 @ rs2 @ 0x00`6
+    
 
     tlt {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tlt} @ dst @ rs1 @ rs2 @ 0b000000
     tge {dst: Reg}, {rs1: Reg}, {rs2: Reg} => asm{_tge} @ dst @ rs1 @ rs2 @ 0b000000
@@ -176,6 +176,7 @@ EXN_BREAKPOINT = 1
 
 #bankdef rom
 {
+    #bits 8
     #addr 2048
     #outp 0
 }

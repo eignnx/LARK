@@ -45,15 +45,40 @@ impl App {
     /// Side panel contains the registers display (and in the future other info that can be
     /// tabbed to).
     fn render_side_panel(&self, f: &mut Frame, side_panel: Rect) {
-        let regs_display = format!("{}", self.cpu.regs);
-        let regs_lines = regs_display
-            .lines()
-            .enumerate()
-            .map(|(i, line)| {
-                ListItem::new(Line {
-                    spans: vec![Span::raw(format!("${:<2} {}", i + 1, line))],
-                    ..Default::default()
-                })
+        let reg_lines = self
+            .cpu
+            .regs
+            .iter()
+            .map(|(reg, value)| {
+                let color = if reg.is_ret_related() {
+                    Color::Yellow
+                } else if reg.is_argument() {
+                    Color::Red
+                } else if reg.is_temporary() {
+                    Color::Green
+                } else if reg.is_saved() {
+                    Color::Blue
+                } else if reg.is_kernel() {
+                    Color::Magenta
+                } else {
+                    Color::White
+                };
+                let style = Style::new().fg(color);
+                let idx = reg as u8;
+                use std::fmt::Write;
+                let mut text = String::with_capacity(30);
+                write!(text, "${:<2}", idx).unwrap();
+                write!(text, " {reg}:").unwrap();
+                write!(text, " 0x{:04x}", value.as_u16()).unwrap();
+                write!(text, ", {:5}u", value.as_u16()).unwrap();
+                write!(text, ", {:+5}", value.as_i16()).unwrap();
+                match char::try_from(value.as_u16() as u32) {
+                    Ok(ch) if ch.is_ascii_graphic() || ch.is_ascii_whitespace() => {
+                        write!(text, ", {:?}", ch).unwrap()
+                    }
+                    _ => {}
+                };
+                ListItem::new(Line::styled(text, style))
             })
             .chain([
                 {
@@ -76,7 +101,7 @@ impl App {
             ]);
 
         f.render_widget(
-            List::new(regs_lines).block(Block::default().borders(Borders::ALL).title("Registers")),
+            List::new(reg_lines).block(Block::default().borders(Borders::ALL).title("Registers")),
             side_panel,
         );
     }
