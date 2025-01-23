@@ -1,4 +1,4 @@
-use lark_vm::cpu::{self, ArgStyle};
+use lark_vm::cpu::{self, instr, ArgStyle};
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
@@ -45,6 +45,20 @@ impl App {
     /// Side panel contains the registers display (and in the future other info that can be
     /// tabbed to).
     fn render_side_panel(&self, f: &mut Frame, side_panel: Rect) {
+        // Split into lower and upper sections, upper section is for registers, lower is smaller and is for info:
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(15 + 2 + 1 + 2), Constraint::Min(3)])
+            .split(side_panel);
+
+        let regs_pane = layout[0];
+        let info_pane = layout[1];
+
+        self.render_registers(f, regs_pane);
+        self.render_info_pane(f, info_pane);
+    }
+
+    fn render_registers(&self, f: &mut Frame<'_>, side_panel: Rect) {
         let reg_lines = self
             .cpu
             .regs
@@ -102,6 +116,23 @@ impl App {
 
         f.render_widget(
             List::new(reg_lines).block(Block::default().borders(Borders::ALL).title("Registers")),
+            side_panel,
+        );
+    }
+
+    fn render_info_pane(&self, f: &mut Frame<'_>, side_panel: Rect) {
+        let instr_per_sec = if let Some(duration) = self.instr_time_delta {
+            if duration.as_secs_f32() > 0.0 {
+                1.0f32 / duration.as_secs_f32()
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
+        let text = vec![Line::raw(format!("instr/sec: {instr_per_sec:.0}"))];
+        f.render_widget(
+            List::new(text).block(Block::default().borders(Borders::ALL).title("Info")),
             side_panel,
         );
     }

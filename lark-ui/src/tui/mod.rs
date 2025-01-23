@@ -4,6 +4,7 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::mpsc::{Receiver, Sender},
+    time::{Duration, Instant},
 };
 
 use anyhow::Result;
@@ -38,6 +39,9 @@ pub struct App {
     cmd_history: Vec<String>,
     cmd_history_idx: usize,
 
+    instr_stopwatch_start: Instant,
+    instr_time_delta: Option<Duration>,
+
     should_quit: bool,
 }
 
@@ -67,6 +71,10 @@ impl App {
             cmd_output_scroll: 0,
             cmd_history,
             cmd_history_idx: 0,
+
+            instr_stopwatch_start: Instant::now(),
+            instr_time_delta: None,
+
             should_quit: false,
         };
 

@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode};
@@ -12,6 +15,9 @@ impl App {
     // App update function
     pub fn update(&mut self) -> Result<()> {
         if self.cpu_run_till_breakpoint {
+            self.instr_time_delta = Some(self.instr_stopwatch_start.elapsed());
+            self.instr_stopwatch_start = Instant::now();
+
             self.cpu.step().unwrap_or_else(|e| {
                 self.cmd_err(format!("CPU Error: {:?}", e));
             });
@@ -48,6 +54,7 @@ impl App {
                         KeyCode::Esc if self.cpu_run_till_breakpoint => {
                             self.cmd_log("CPU halted.".to_string());
                             self.cpu_run_till_breakpoint = false;
+                            self.instr_time_delta = None;
                         }
                         KeyCode::Esc => {
                             self.cmd_input.reset();
