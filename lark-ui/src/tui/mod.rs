@@ -8,9 +8,10 @@ use std::{
 };
 
 use anyhow::Result;
+use crossterm::event::MouseEvent;
 use ratatui::prelude::*;
 
-use lark_vm::cpu::{self, Cpu, MemBlock};
+use lark_vm::cpu::{self, instr::Instr, Cpu, MemBlock};
 
 use crate::cli::Opts;
 
@@ -28,6 +29,8 @@ pub struct App {
     romfile: Option<PathBuf>,
     vtty_buf: Rc<RefCell<MemBlock<{ cpu::VTTY_BYTES }>>>,
 
+    disassembly: Vec<Instr>,
+
     cpu_signal_channel: Receiver<lark_vm::cpu::Signal>,
     cpu_interrupt_channel: Sender<lark_vm::cpu::interrupts::Interrupt>,
     cpu_run_till_breakpoint: bool,
@@ -41,6 +44,9 @@ pub struct App {
 
     instr_stopwatch_start: Instant,
     instr_time_delta: Option<Duration>,
+
+    mouse_click: Option<MouseEvent>,
+    tab_idx: usize,
 
     should_quit: bool,
 }
@@ -63,6 +69,8 @@ impl App {
             romfile: opts.romfile.or(session.romfile),
             vtty_buf,
 
+            disassembly: Vec::new(),
+
             cpu_signal_channel: rx,
             cpu_interrupt_channel: interrupt_tx,
             cpu_run_till_breakpoint: false,
@@ -76,6 +84,9 @@ impl App {
 
             instr_stopwatch_start: Instant::now(),
             instr_time_delta: None,
+
+            mouse_click: None,
+            tab_idx: 0,
 
             should_quit: false,
         };

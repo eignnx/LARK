@@ -1,13 +1,12 @@
 use lark_vm::cpu::{self, ArgStyle};
-use ratatui::{
-    prelude::*,
-    widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
-};
+use ratatui::{prelude::*, widgets::*};
 
 use super::{utils, App};
 
+mod dis;
+
 impl App {
-    pub fn ui(&self, f: &mut Frame) {
+    pub fn ui(&mut self, f: &mut Frame) {
         let cols = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
@@ -23,13 +22,13 @@ impl App {
         self.render_side_panel(f, side_panel);
     }
 
-    fn render_vtty_cmd_input(&self, f: &mut Frame, col: Rect) {
+    fn render_vtty_cmd_input(&mut self, f: &mut Frame, col: Rect) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
-                Constraint::Min(3),                            // Cmd output height
-                Constraint::Length(3),                         // Cmd input height
+                Constraint::Length(cpu::VTTY_ROWS as u16 + 2 + 1), // Vtty height + borders + tab bar
+                Constraint::Min(3),                                // Cmd output height
+                Constraint::Length(3),                             // Cmd input height
             ])
             .split(col);
 
@@ -37,9 +36,43 @@ impl App {
         let cmd_output_row = layout[1];
         let cmd_input_row = layout[2];
 
-        self.render_vtty(f, vtty_inner_layout);
+        self.render_vtty_and_disassembly(f, vtty_inner_layout);
+        // self.render_vtty(f, vtty_inner_layout);
+        // self.render_disassembly(f, vtty_inner_layout);
         self.render_cmd_output(f, cmd_output_row);
         self.render_cmd_input(cmd_input_row, f);
+    }
+
+    fn render_vtty_and_disassembly(&mut self, f: &mut Frame, row: Rect) {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),                         // Tab bar
+                Constraint::Length(cpu::VTTY_ROWS as u16 + 2), // Vtty height + borders
+            ])
+            .split(row);
+
+        let tabs = Tabs::new(vec!["VTTY", "Disassembly"])
+            .select(self.tab_idx)
+            .style(Style::default().fg(Color::Yellow))
+            .highlight_style(Style::default().reversed());
+
+        if let Some(m) = self.mouse_click {
+            let rect = layout[0];
+            let (top, bot, left, right) = (rect.top(), rect.bottom(), rect.left(), rect.right());
+            let (x, y) = (m.column, m.row);
+            if top <= y && y < bot && left <= x && x < right {
+                self.tab_idx = 1 - self.tab_idx;
+                self.mouse_click = None;
+            }
+        }
+
+        f.render_widget(tabs, layout[0]);
+        match self.tab_idx {
+            0 => self.render_vtty(f, layout[1]),
+            1 => self.render_disassembly(f, layout[1]),
+            _ => unreachable!(),
+        }
     }
 
     /// Side panel contains the registers display (and in the future other info that can be
@@ -83,7 +116,7 @@ impl App {
                 let mut text = String::with_capacity(30);
                 write!(text, "${:<2}", idx).unwrap();
                 write!(text, " {reg}:").unwrap();
-                write!(text, " 0x{:04x}", value.as_u16()).unwrap();
+                write!(text, " 0x{:04X}", value.as_u16()).unwrap();
                 write!(text, ", {:5}u", value.as_u16()).unwrap();
                 write!(text, ", {:+5}", value.as_i16()).unwrap();
                 match char::try_from(value.as_u16() as u32) {
@@ -99,7 +132,7 @@ impl App {
                     let unsigned = self.cpu.lo.as_u16();
                     let signed = self.cpu.lo.as_i16();
                     ListItem::new(Line::raw(format!(
-                        "    $LO: 0x{:04x}, {:5}u, {:+5}",
+                        "    $LO: 0x{:04X}, {:5}u, {:+5}",
                         unsigned, unsigned, signed
                     )))
                 },
@@ -107,11 +140,11 @@ impl App {
                     let unsigned = self.cpu.hi.as_u16();
                     let signed = self.cpu.hi.as_i16();
                     ListItem::new(Line::raw(format!(
-                        "    $HI: 0x{:04x}, {:5}u, {:+5}",
+                        "    $HI: 0x{:04X}, {:5}u, {:+5}",
                         unsigned, unsigned, signed
                     )))
                 },
-                ListItem::new(Line::raw(format!("    $pc: 0x{:04x}", self.cpu.pc))),
+                ListItem::new(Line::raw(format!("    $pc: 0x{:04X}", self.cpu.pc))),
             ]);
 
         f.render_widget(

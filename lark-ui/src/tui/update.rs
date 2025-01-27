@@ -4,10 +4,10 @@ use std::{
 };
 
 use anyhow::Result;
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, Event, KeyCode, MouseButton};
 use tui_input::backend::crossterm::EventHandler;
 
-use lark_vm::cpu::{MemBlock, MemRw, Signal};
+use lark_vm::cpu::{instr::Instr, MemBlock, MemRw, Signal};
 
 use super::{ui::CmdMsg, App};
 
@@ -35,6 +35,9 @@ impl App {
                     event::MouseEventKind::ScrollUp => {
                         self.cmd_output_scroll =
                             (self.cmd_output_scroll + 1).min(self.cmd_output.len());
+                    }
+                    event::MouseEventKind::Down(MouseButton::Left) => {
+                        self.mouse_click = Some(m);
                     }
                     _ => {}
                 }
@@ -326,6 +329,7 @@ impl App {
         self.reset_cpu();
         self.romfile = Some(path.to_path_buf());
         self.cpu.load_rom(rom);
+        self.disassembly = self.disassembly();
 
         self.cmd_info(format!(
             "Loaded ROM file `{}` ({romfile_size} bytes)",
@@ -341,5 +345,14 @@ impl App {
     fn reset_cpu(&mut self) {
         self.cpu.reset();
         self.clear_vtty();
+    }
+
+    fn disassembly(&mut self) -> Vec<Instr> {
+        let machine_code: &[u8] = self.cpu.mem.rom.as_ref();
+        let mut instrs = Vec::new();
+        if let Err(e) = Instr::disassemble(&mut instrs, machine_code) {
+            self.cmd_err(format!("Disassembly error: {:?}", e));
+        }
+        instrs
     }
 }
