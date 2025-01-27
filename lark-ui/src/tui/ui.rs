@@ -1,4 +1,4 @@
-use lark_vm::cpu::{self, instr, ArgStyle};
+use lark_vm::cpu::{self, ArgStyle};
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},

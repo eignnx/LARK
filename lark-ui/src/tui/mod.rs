@@ -54,11 +54,13 @@ impl App {
 
         let cpu = Cpu::new(Default::default(), vtty_buf.clone(), tx, interrupt_rx);
 
+        let session = Self::load_session();
+
         let mut app = Self {
             cpu,
-            meadowlark_src: opts.meadowlark_src,
-            lark_src: opts.lark_src,
-            romfile: opts.romfile,
+            meadowlark_src: opts.meadowlark_src.or(session.meadowlark_src),
+            lark_src: opts.lark_src.or(session.lark_src),
+            romfile: opts.romfile.or(session.romfile),
             vtty_buf,
 
             cpu_signal_channel: rx,
@@ -155,6 +157,75 @@ impl App {
             .map(|s| s.to_owned())
             .collect()
     }
+
+    fn load_session() -> Session {
+        let path = directories_next::ProjectDirs::from("com", "eignnx", "lark")
+            .unwrap()
+            .config_dir()
+            .join("session.ini");
+
+        let s = std::fs::read_to_string(&path).unwrap_or_default();
+
+        Session::deserialize(&s)
+    }
+
+    fn save_session(session: &Session) {
+        let path = directories_next::ProjectDirs::from("com", "eignnx", "lark")
+            .unwrap()
+            .config_dir()
+            .join("session.ini");
+
+        std::fs::write(&path, session.serialize()).unwrap();
+    }
+}
+
+struct Session {
+    meadowlark_src: Option<PathBuf>,
+    lark_src: Option<PathBuf>,
+    romfile: Option<PathBuf>,
+}
+
+impl Session {
+    fn serialize(&self) -> String {
+        let mut s = String::new();
+
+        if let Some(path) = &self.meadowlark_src {
+            s.push_str(&format!("meadowlark_src = {}\n", path.display()));
+        }
+
+        if let Some(path) = &self.lark_src {
+            s.push_str(&format!("lark_src = {}\n", path.display()));
+        }
+
+        if let Some(path) = &self.romfile {
+            s.push_str(&format!("romfile = {}\n", path.display()));
+        }
+
+        s
+    }
+
+    fn deserialize(s: &str) -> Self {
+        let mut meadowlark_src = None;
+        let mut lark_src = None;
+        let mut romfile = None;
+
+        for line in s.lines() {
+            let (key, value) = line.split_once(" = ").unwrap();
+
+            match key {
+                "meadowlark_src" => meadowlark_src = Some(PathBuf::from(value)),
+                "lark_src" => lark_src = Some(PathBuf::from(value)),
+                "romfile" => romfile = Some(PathBuf::from(value)),
+                _ => {}
+            }
+        }
+
+        Self {
+            meadowlark_src,
+            lark_src,
+            romfile,
+        }
+    }
 }
 
 const MAX_HIST_LEN: usize = 512;
@@ -185,5 +256,14 @@ impl Drop for App {
         for line in it {
             writeln!(f, "{}", line).unwrap();
         }
+
+        let session = Session {
+            meadowlark_src: self.meadowlark_src.take(),
+            lark_src: self.lark_src.take(),
+            romfile: self.romfile.take(),
+        };
+
+        Self::save_session(&session);
+        utils::shutdown().unwrap();
     }
 }
