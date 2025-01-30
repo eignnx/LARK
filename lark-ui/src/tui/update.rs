@@ -1,4 +1,5 @@
 use std::{
+    fmt::Write,
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -180,7 +181,6 @@ impl App {
                 self.reset_cpu();
             }
             ["registers" | "regs" | "reg"] => {
-                use std::fmt::Write;
                 let mut lines = String::new();
                 write!(&mut lines, "{}", self.cpu.regs).unwrap();
                 for line in lines.lines() {
@@ -223,11 +223,44 @@ impl App {
                     }
                 }
             }
+            // Examine word:
+            ["x" | "x/w", addr_str] => {
+                let Some(addr) = parse_number(addr_str) else {
+                    self.cmd_err(format!("Invalid address: `{addr_str}`"));
+                    return;
+                };
+                let word = self.cpu.mem.read_s16(addr);
+                let unsigned = word.as_u16();
+                let signed = word.as_i16();
+                self.cmd_info(format!(
+                    "(16-bit) {addr_str}: {unsigned:5}, {signed:+5}, 0x{unsigned:04X}, 0b{unsigned:016b}"
+                ));
+            }
+            // Examine byte:
+            ["x/b", addr_str] => {
+                let Some(addr) = parse_number(addr_str) else {
+                    self.cmd_err(format!("Invalid address: `{addr_str}`"));
+                    return;
+                };
+                let byte = self.cpu.mem.read_u8(addr);
+                let ch = byte as char;
+                let mut msg = format!(" (8-bit) {addr_str}: {byte:3}, 0x{byte:02X}, 0b{byte:08b}");
+                if ch.is_ascii_graphic() || ch.is_ascii_whitespace() {
+                    write!(&mut msg, ", {:?}", ch).unwrap();
+                }
+                self.cmd_info(msg);
+            }
             ["hexdump" | "x", lo, "..", hi] => {
                 self.cmd_info("Hexdump of ROM:".to_string());
                 let mut line = String::new();
-                let lo: u16 = lo.parse().unwrap();
-                let hi: u16 = hi.parse().unwrap();
+                let Some(lo) = parse_number(lo) else {
+                    self.cmd_err(format!("Invalid low address: `{lo}`"));
+                    return;
+                };
+                let Some(hi) = parse_number(hi) else {
+                    self.cmd_err(format!("Invalid high address: `{hi}`"));
+                    return;
+                };
                 for i in lo..(hi - lo) {
                     let b = self.cpu.mem.read_u8(i);
                     line.push_str(&format!("{b:02X} "));
@@ -246,8 +279,14 @@ impl App {
             ["hexdump" | "x", base, ":+", len] => {
                 self.cmd_info("Hexdump of ROM:".to_string());
                 let mut line = String::new();
-                let base: u16 = base.parse().unwrap();
-                let len: u16 = len.parse().unwrap();
+                let Some(base) = parse_number(base) else {
+                    self.cmd_err(format!("Invalid base address: `{base}`"));
+                    return;
+                };
+                let Some(len) = parse_number(len) else {
+                    self.cmd_err(format!("Invalid length: `{len}`"));
+                    return;
+                };
                 for i in base..(base + len) {
                     let b = self.cpu.mem.read_u8(i);
                     line.push_str(&format!("{b:02X} "));
@@ -354,5 +393,17 @@ impl App {
             self.cmd_err(format!("Disassembly error: {:?}", e));
         }
         instrs
+    }
+}
+
+fn parse_number(s: &str) -> Option<u16> {
+    if let Some(stripped) = s.strip_prefix("0b") {
+        u16::from_str_radix(stripped, 2).ok()
+    } else if let Some(stripped) = s.strip_prefix("0o") {
+        return u16::from_str_radix(stripped, 8).ok();
+    } else if let Some(stripped) = s.strip_prefix("0x") {
+        return u16::from_str_radix(stripped, 16).ok();
+    } else {
+        return s.parse().ok();
     }
 }
