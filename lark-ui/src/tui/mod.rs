@@ -1,6 +1,5 @@
 use std::{
     cell::RefCell,
-    io::Write,
     path::PathBuf,
     rc::Rc,
     sync::mpsc::{Receiver, Sender},
@@ -86,7 +85,7 @@ impl App {
             instr_time_delta: None,
 
             mouse_click: None,
-            tab_idx: 0,
+            tab_idx: session.tab_idx,
 
             should_quit: false,
         };
@@ -194,23 +193,28 @@ struct Session {
     meadowlark_src: Option<PathBuf>,
     lark_src: Option<PathBuf>,
     romfile: Option<PathBuf>,
+    tab_idx: usize,
 }
 
 impl Session {
     fn serialize(&self) -> String {
+        use std::fmt::Write;
+
         let mut s = String::new();
 
         if let Some(path) = &self.meadowlark_src {
-            s.push_str(&format!("meadowlark_src = {}\n", path.display()));
+            writeln!(s, "meadowlark_src = {}", path.display()).unwrap();
         }
 
         if let Some(path) = &self.lark_src {
-            s.push_str(&format!("lark_src = {}\n", path.display()));
+            writeln!(s, "lark_src = {}", path.display()).unwrap();
         }
 
         if let Some(path) = &self.romfile {
-            s.push_str(&format!("romfile = {}\n", path.display()));
+            writeln!(s, "romfile = {}", path.display()).unwrap();
         }
+
+        writeln!(s, "tab_idx = {}", self.tab_idx).unwrap();
 
         s
     }
@@ -219,6 +223,7 @@ impl Session {
         let mut meadowlark_src = None;
         let mut lark_src = None;
         let mut romfile = None;
+        let mut tab_idx = 0;
 
         for line in s.lines() {
             let (key, value) = line.split_once(" = ").unwrap();
@@ -227,6 +232,7 @@ impl Session {
                 "meadowlark_src" => meadowlark_src = Some(PathBuf::from(value)),
                 "lark_src" => lark_src = Some(PathBuf::from(value)),
                 "romfile" => romfile = Some(PathBuf::from(value)),
+                "tab_idx" => tab_idx = value.parse().unwrap_or_default(),
                 _ => {}
             }
         }
@@ -235,6 +241,7 @@ impl Session {
             meadowlark_src,
             lark_src,
             romfile,
+            tab_idx,
         }
     }
 }
@@ -243,6 +250,8 @@ const MAX_HIST_LEN: usize = 512;
 
 impl Drop for App {
     fn drop(&mut self) {
+        use std::io::Write;
+
         let path = Self::histfile_path();
 
         // Create parent directories if they don't exist
@@ -272,6 +281,7 @@ impl Drop for App {
             meadowlark_src: self.meadowlark_src.take(),
             lark_src: self.lark_src.take(),
             romfile: self.romfile.take(),
+            tab_idx: self.tab_idx,
         };
 
         Self::save_session(&session);
