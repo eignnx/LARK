@@ -73,14 +73,19 @@ impl App {
         match self.tab_idx {
             0 => self.render_vtty(f, content_layout),
             1 => {
+                let block = Block::default().borders(Borders::ALL).title("Disassembly");
+                let inner_content_layout = block.inner(content_layout);
+
+                f.render_widget(block, content_layout);
+
                 let disassembly_view = dis::DisassemblyView {
                     disassembly: &self.disassembly,
                     pc: self.cpu.pc,
                 };
-                // .block(Block::default().borders(Borders::ALL).title("Disassembly"));
+
                 f.render_stateful_widget(
                     disassembly_view,
-                    content_layout,
+                    inner_content_layout,
                     &mut self.disassembly_scroll_view_state,
                 );
             }
