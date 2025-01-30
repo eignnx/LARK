@@ -32,10 +32,12 @@ impl App {
                 match m.kind {
                     event::MouseEventKind::ScrollDown => {
                         self.cmd_output_scroll = self.cmd_output_scroll.saturating_sub(1);
+                        self.disassembly_scroll_view_state.scroll_down();
                     }
                     event::MouseEventKind::ScrollUp => {
                         self.cmd_output_scroll =
                             (self.cmd_output_scroll + 1).min(self.cmd_output.len());
+                        self.disassembly_scroll_view_state.scroll_up();
                     }
                     event::MouseEventKind::Down(MouseButton::Left) => {
                         self.mouse_click = Some(m);

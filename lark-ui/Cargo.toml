@@ -10,9 +10,10 @@ clap = { version = "4.4.17", features = ["derive"] }
 directories-next = "2.0.0"
 
 anyhow = "1.0.79"
-crossterm = "0.27.0"
-ratatui = "0.25.0"
-tui-input = "*"
+crossterm = "0.28.1"
+ratatui = "0.29.0"       # "0.25.0"
+tui-input = "0.11.1"
+tui-scrollview = "0.5.1"
 
 lark-vm = { path = "../lark-vm" }
 meadowlark = { path = "../meadowlark" }

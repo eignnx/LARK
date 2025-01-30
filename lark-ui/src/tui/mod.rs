@@ -11,6 +11,7 @@ use crossterm::event::MouseEvent;
 use ratatui::prelude::*;
 
 use lark_vm::cpu::{self, instr::Instr, Cpu, MemBlock};
+use tui_scrollview::ScrollViewState;
 
 use crate::cli::Opts;
 
@@ -46,6 +47,7 @@ pub struct App {
 
     mouse_click: Option<MouseEvent>,
     tab_idx: usize,
+    disassembly_scroll_view_state: ScrollViewState,
 
     should_quit: bool,
 }
@@ -86,6 +88,7 @@ impl App {
 
             mouse_click: None,
             tab_idx: session.tab_idx,
+            disassembly_scroll_view_state: ScrollViewState::default(),
 
             should_quit: false,
         };

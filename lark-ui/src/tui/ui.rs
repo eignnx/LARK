@@ -13,7 +13,7 @@ impl App {
                 Constraint::Min(80), // Virtual Terminal
                 Constraint::Min(0),  // Side panel (registers, etc)
             ])
-            .split(f.size());
+            .split(f.area());
 
         let vtty_cmd_input = cols[0];
         let side_panel = cols[1];
@@ -68,9 +68,22 @@ impl App {
         }
 
         f.render_widget(tabs, layout[0]);
+
+        let content_layout = layout[1];
         match self.tab_idx {
-            0 => self.render_vtty(f, layout[1]),
-            1 => self.render_disassembly(f, layout[1]),
+            0 => self.render_vtty(f, content_layout),
+            1 => {
+                let disassembly_view = dis::DisassemblyView {
+                    disassembly: &self.disassembly,
+                    pc: self.cpu.pc,
+                };
+                // .block(Block::default().borders(Borders::ALL).title("Disassembly"));
+                f.render_stateful_widget(
+                    disassembly_view,
+                    content_layout,
+                    &mut self.disassembly_scroll_view_state,
+                );
+            }
             _ => unreachable!(),
         }
     }
@@ -180,14 +193,14 @@ impl App {
                 .block(Block::default().borders(Borders::ALL).title("Input"));
             f.render_widget(input, cmd_input_row);
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
-            f.set_cursor(
+            f.set_cursor_position((
                 // Put cursor past the end of the input text
                 cmd_input_row.x
                     + ((self.cmd_input.visual_cursor()).max(scroll) - scroll) as u16
                     + 1,
                 // Move one line down, from the border to the input line
                 cmd_input_row.y + 1,
-            )
+            ))
         }
     }
 
