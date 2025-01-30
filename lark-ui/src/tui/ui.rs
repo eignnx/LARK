@@ -1,5 +1,5 @@
 use lark_vm::cpu::{self, ArgStyle};
-use ratatui::{prelude::*, widgets::*};
+use ratatui::{prelude::*, style::Styled, widgets::*};
 
 use super::{utils, App};
 
@@ -206,6 +206,16 @@ impl App {
                 // Move one line down, from the border to the input line
                 cmd_input_row.y + 1,
             ))
+        } else {
+            let block = Block::default().borders(Borders::ALL).title("Input");
+            let inner = block.inner(cmd_input_row);
+            f.render_widget(block, cmd_input_row);
+            f.render_widget(
+                Paragraph::new("[Key events routed to VM. Press HOME key to focus]")
+                    .alignment(Alignment::Center)
+                    .style(Style::new().dim()),
+                inner,
+            );
         }
     }
 
